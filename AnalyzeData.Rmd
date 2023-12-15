@@ -1,0 +1,204 @@
+---
+---
+
+```{r setUp, results='hide', warning=False}
+#install.packages("kableExtra")
+library(DBI)
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(scales)
+library(ggplot2)
+```
+
+```{r mysqlconn, results='hide', warning=False}
+# Connect to MySQL data warehouse
+get_db_connection <- function() {
+  dbcon <- dbConnect(RMySQL::MySQL(), dbname = "cs5200", 
+                     host = "34.69.127.246", port = 3306, 
+                     user = "root", password = "cs5200") 
+  return(dbcon)
+}
+mysqlconn <- get_db_connection()
+```
+
+## Analytical Query I: Top five sales reps with the most sales broken down by year. 
+
+```{r top5Reps, eval=T, warning=F}
+query1 <- "
+SELECT sub.year, sub.firstName, sub.surName, sub.totalSales, sub.totalUnits, sub.totalTxns
+FROM (SELECT r.firstName, r.surName, d.year, SUM(rf.totalSales) as totalSales, SUM(rf.totalUnits) as totalUnits, SUM(rf.totalTxns) as totalTxns,
+        RANK() OVER (PARTITION BY d.year ORDER BY SUM(rf.totalSales) DESC) as rankNum
+      FROM rep_facts rf
+      JOIN dimRep r USING (rID)
+      JOIN dimDate d USING (dateID)
+      GROUP BY d.year, rf.rID) sub
+WHERE sub.rankNum <= 5;
+"
+topSalesReps <- dbGetQuery(mysqlconn, query1)
+topSalesReps %>%
+  mutate(totalSales = comma(totalSales)) %>%
+  mutate(totalUnits = comma(totalUnits)) %>%
+  mutate(totalTxns = comma(totalTxns)) %>%
+  kable(col.names = c("Year", "First Name", "Last Name", "Total Revenue (USD)", "Total Units", "Total Transactions"), 
+        caption = "<b>Top Five Sales Representatives per Year, by Total Revenue (USD)</b>", 
+        format = "html", escape = F) %>%
+  kable_classic(full_width = T, c("striped","hover"),html_font = "Arial", position="float_left", font_size = 16)%>%
+  column_spec(1, bold = T, width = "2cm")%>%
+  column_spec(2:5, width = "3cm")%>%
+  column_spec(6, width = "2cm")
+```
+
+
+### Summary
+The table above highlights the top five sales representatives by total sales volume for each year covered in the sale records. This data is important for recognizing outstanding achievements and strategizing future sales efforts. To ensure a comprehensive analysis, we ranked the representatives by total revenue (USD), total units sold, and total number of transactions. The same five representatives emerged as leaders across all three sales metrics.  
+
+### Insights:
+- Top Performers: Walison da Silva leads as the top sales representative for three consecutive years. The consistent presence of the same five individuals in the top tier underscores a stable and high-performing sales group.
+- Sales Fluctuations: All top five performers experienced a marked increase in sales in 2021, followed by a reduction in 2022, reflecting broader market or operational influences.
+- Lynette McRowe exhibited the most significant growth rate (in terms of total amount) between 2020-2021 at 140.6%. However, Lynette also faced the steepest sales decline of 62.7% the following year.
+- Walison da Silva saw the greatest increase in 2021, adding 4,640,173 USD (total amount) to his sales from the previous year, but then experienced the largest decrease in 2022, with a drop of 4,035,739 USD.
+
+
+## Analytical Query II: Total sold per year per region.  
+
+```{r totalSalesYrRegion, eval=T, warning=FALSE}
+query2 <- "
+SELECT d.year, r.territory, SUM(sf.totalSales) as totalSales, SUM(sf.totalUnits) as totalUnits
+FROM sales_facts sf
+JOIN dimDate d USING (dateID)
+JOIN dimRegion r USING (regionID) 
+GROUP BY d.year, r.territory
+ORDER BY d.year, r.territory
+"
+
+# Execute query and generate table
+totalSalesYearRegion <- dbGetQuery(mysqlconn, query2)
+totalSalesYearRegion %>%
+  mutate(totalSales = comma(totalSales)) %>%
+  mutate(totalUnits = comma(totalUnits)) %>%
+  kable(col.names = c("Year", "Region", "Total Revenue (USD)", "Total Units"), 
+        caption = "<b>Total Sales per Year by Region </b>", 
+        format = "html", escape = F) %>%
+  kable_classic(full_width = F, c("striped","hover"),html_font = "Arial", position="float_left", font_size = 16)%>%
+  column_spec(1, bold = T, width = "2cm")%>%
+  column_spec(2:3, width = "4cm")
+
+# Create grouped bar chart with specified text sizes
+ggplot(totalSalesYearRegion, aes(x = as.factor(year), y = totalSales, fill = territory)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = " ", y = "Total Revenue", fill = "Region", 
+       title = "Total Revenue (USD) per Year by Region") +
+  theme(
+    axis.text.x = element_text(size = 11, hjust = 1), # x ticks
+    axis.text.y = element_text(size = 11), # y ticks
+    axis.title.x = element_text(size = 12), # x label
+    axis.title.y = element_text(size = 12), # y label
+    plot.title = element_text(size = 14, face = "bold"), 
+    legend.title = element_text(size = 11),
+    legend.text = element_text(size = 10) 
+  )
+
+
+# Create grouped bar chart with specified text sizes
+ggplot(totalSalesYearRegion, aes(x = as.factor(year), y = totalUnits, fill = territory)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = " ", y = "Total Units", fill = "Region", 
+       title = "Total Units per Year by Region") +
+  theme(
+    axis.text.x = element_text(size = 11, hjust = 1),
+    axis.text.y = element_text(size = 11), 
+    axis.title.x = element_text(size = 12), 
+    axis.title.y = element_text(size = 12), 
+    plot.title = element_text(size = 14, face = "bold"), 
+    legend.title = element_text(size = 11),
+    legend.text = element_text(size = 10) 
+  )
+```
+### Summary
+This report provides an analysis of our company's sales performance across different regions for the years 2020 to 2022, in terms of total amount sold (USD) and total units sold. The accompanying table and grouped bar charts offer a clear visualization of sales trends and regional performance, allowing for strategic insights into market behavior and regional sales effectiveness.
+
+### Insights
+- Growth Trend: There was significant growth in sales from 2020 to 2021 across all regions, with South America leading the increase. However, a decline in 2022 suggests external market challenges or saturation.
+- Regional Performance: The EMEA region consistently shows strong performance, topping sales in 2020. In 2022, despite the decline, it remains a strong contributor to the company's revenue.
+
+
+## Analytical Query III: Total sold per quarter per year. 
+```{r salesQtrYr, eval=T, warning=F}
+query3 <- "
+SELECT d.year, d.quarter, SUM(sf.totalSales) as totalSales, SUM(sf.totalUnits) as totalUnits
+FROM sales_facts sf
+JOIN dimDate d USING (dateID)
+GROUP BY d.year, d.quarter
+ORDER BY d.year, d.quarter
+"
+
+# Execute query
+totalSalesQuarter <- dbGetQuery(mysqlconn, query3)
+
+totalSalesQuarter %>%
+  mutate(totalSales = comma(totalSales)) %>%
+  mutate(totalUnits = comma(totalUnits)) %>%
+  kable(col.names = c("Year", "Quarter", "Total Revenue (USD)", "Total Units"), 
+        caption = "<b>Total Sales per Quarter per Year </b>", 
+        format = "html", escape = F) %>%
+  kable_classic(full_width = F, c("striped","hover"),html_font = "Arial", position="float_left", font_size = 16)%>%
+  column_spec(1, bold = T, width = "2cm")%>%
+  column_spec(2, width = "2cm")%>%
+  column_spec(3:4, width = "4cm")
+
+# Create line graph
+line_chart1 <- ggplot(totalSalesQuarter, aes(x = as.factor(quarter), y = totalSales, group = year, color = as.factor(year))) +
+  geom_line(size = 1) + # Setting line type by year
+  scale_y_continuous(labels = comma) +
+  labs(title = "Total Revenue (USD) per Quarter per Year",
+       x = "Quarter",
+       y = "Total Revenue",
+       color = "Year") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 11, vjust = 1, hjust = 1), # x ticks
+    axis.text.y = element_text(size = 11), # y ticks
+    axis.title.x = element_text(size = 12), # x label
+    axis.title.y = element_text(size = 12), # y label
+    plot.title = element_text(size = 14, face = "bold"), 
+    legend.title = element_text(size = 11), 
+    legend.text = element_text(size = 10) 
+  )
+line_chart1
+
+# Create line graph
+line_chart2 <- ggplot(totalSalesQuarter, aes(x = as.factor(quarter), y = totalUnits, group = year, color = as.factor(year))) +
+  geom_line(size = 1) + # Setting line type by year
+  scale_y_continuous(labels = comma) +
+  labs(title = "Total Units per Quarter per Year",
+       x = "Quarter",
+       y = "Total Units",
+       color = "Year") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 11, vjust = 1, hjust = 1), # x ticks
+    axis.text.y = element_text(size = 11), # y ticks
+    axis.title.x = element_text(size = 12), # x label
+    axis.title.y = element_text(size = 12), # y label
+    plot.title = element_text(size = 14, face = "bold"), 
+    legend.title = element_text(size = 11), 
+    legend.text = element_text(size = 10) 
+  )
+line_chart2
+```
+### Summary
+The visualization provides a detailed analysis of our sales trends on a quarterly basis over the last three years. It  delineates the sales trajectory in terms of total revenue (in USD) and total units sold. This breakdown is important in identifying emerging patterns and guiding informed decision-making.
+
+### Insights
+- Significant growth in 2021: there was a considerable increase in sales during 2021 across all quarters when compared to 2020, with the highest peak in Q3 of 2021.
+- Despite a general downturn in 2022 compared to the heights of 2021, it is noteworthy that the total revenue generated in 2022 surpassed 2020's figures in all quarters except the fourth (Q4). However, in terms of total units sold, 2022 fell slightly behind 2020 across all quarters, suggesting a shift in the nature of sales.
+- The second (Q2) and third (Q3) quarters consistently emerge as strong periods for sales in both revenue and units sold. Notably, Q3 shows a higher revenue generation, which could be indicative of a seasonal influence or the impact of targeted sales initiatives during this period.
+
+```{r}
+dbDisconnect(mysqlconn)
+```
