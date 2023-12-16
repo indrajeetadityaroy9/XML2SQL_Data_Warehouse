@@ -12,9 +12,7 @@ close_all_connections <- function() {
 }
 get_db_connection <- function() {
   close_all_connections()
-  dbcon <- dbConnect(RMySQL::MySQL(), dbname = "cs5200", 
-                     host = "34.69.127.246", port = 3306, 
-                     user = "root", password = "cs5200") 
+  dbcon <- dbConnect(RMySQL::MySQL()) 
   return(dbcon)
 }
 mysqlconn <- get_db_connection()
