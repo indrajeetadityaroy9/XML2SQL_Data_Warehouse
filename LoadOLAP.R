@@ -1,8 +1,3 @@
-#title: Part 2 - Create Star Schema
-#assignment: Practicum II - CS5200
-#authors: Indrajeet Roy, Nhat Pham
-#date: December 5 2023
-
 library(DBI)
 library(RSQLite)
 library(RMySQL)
