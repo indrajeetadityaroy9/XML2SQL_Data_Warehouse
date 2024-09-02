@@ -1,4 +1,4 @@
-# XML Data Warehouse (Pharmaceutical Sales Data Forecasting and Analysis)
+# XML Data Warehouse for Pharmaceutical Sales Data Forecasting and Analysis
 Building a data warehouse utilizing ETL pipelines from XML sources (sales representative details and transactional data)
 
 ### Objectives
