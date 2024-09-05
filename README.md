@@ -1,5 +1,5 @@
 # XML Data Warehouse for Pharmaceutical Sales Data Forecasting and Analysis
-Building a data warehouse utilizing ETL pipelines from XML sources (sales representative details and transactional data)
+Implementation of a data warehouse for pharmaceutical sales which integrates sales representative details and transactional data. Utilizing ETL pipelines, the system efficiently extracts data from complex XML data structures
 
 ### Objectives
 - Extraction of data from complex XML structures.
@@ -9,7 +9,7 @@ Building a data warehouse utilizing ETL pipelines from XML sources (sales repres
 - Data analysis and visualization using the data warehouse.
 
 
-### SQLite Schema
+### DB Schema
 
   ![image](https://github.com/indrajeetadityaroy9/xml_data_warehouse/assets/53830950/0eb7770b-6cf1-445c-b0bc-a3eb7a0eae14)
 
