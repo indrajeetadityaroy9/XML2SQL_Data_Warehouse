@@ -1,9 +1,9 @@
 # XML Data Warehouse for Pharmaceutical Sales Data Forecasting and Analysis
-Data warehouse solution for pharmaceutical sales, which integrates sales representative details and transactional data. The system manages complex XML data structures and utilizes ETL pipelines for data extraction, transformation, and loading into both OLTP and OLAP systems for operational and analytical purposes.
+Data warehouse implementation for pharmaceutical sales data, which integrates sales representative, transactional data, sales data, customer data and product data. The system handles complex XML structures and utilizes ETL pipelines for data extraction, transformation, and loading into both OLTP and OLAP systems for operational and analytical purposes.
 
-## Key Implementation Components
-- Extraction of data from complex XML structures.
-- Tranformation of XML data into a format suitable for relational databases.
+## Key Components
+- Data extraction from XML files.
+- Tranformation of XML data into relational database compliant format.
 - Design and implementation of an OLTP database schema.
 - Data Warehouse Design for OLAP
 - ETL Pipelines for Data Warehousing
